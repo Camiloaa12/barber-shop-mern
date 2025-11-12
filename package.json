@@ -23,7 +23,7 @@
     "mongoose": "latest",
     "next": "16.0.1",
     "react": "^18.2.0",
-    "react-dom": "latest",
+    "react-dom": "^18.2.0",
     "react-router-dom": "latest",
     "sass": "latest",
     "sass-embedded": "latest",
@@ -37,6 +37,7 @@
     "yaml": "latest"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.17",
     "@types/node": "^22",
     "@types/react": "19.2.3",
     "@types/react-dom": "19.2.2",
