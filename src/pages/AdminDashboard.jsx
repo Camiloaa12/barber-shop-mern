@@ -5,11 +5,16 @@ import { useAuth } from "../hooks/useAuth"
 import { useNavigate } from "react-router-dom"
 import { StatisticsSection } from "../components/StatisticsSection"
 import { CutsFilterTable } from "../components/CutsFilterTable"
+import { BarberManagement } from "../components/BarberManagement"
+import { ClientManagement } from "../components/ClientManagement"
 import apiClient from "../api/apiClient"
+import { LayoutDashboard, Users, Scissors, UserCog } from "lucide-react"
 
 export const AdminDashboard = () => {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const [activeTab, setActiveTab] = useState("overview")
+
   const [stats, setStats] = useState(null)
   const [cuts, setCuts] = useState([])
   const [loading, setLoading] = useState(false)
@@ -27,8 +32,10 @@ export const AdminDashboard = () => {
   }, [])
 
   useEffect(() => {
-    fetchCuts()
-  }, [filters])
+    if (activeTab === "overview") {
+      fetchCuts()
+    }
+  }, [filters, activeTab])
 
   const fetchBarbers = async () => {
     try {
@@ -42,7 +49,15 @@ export const AdminDashboard = () => {
   const fetchStats = async () => {
     try {
       const response = await apiClient.get("/stats")
-      setStats(response.data)
+      // Map new stats structure to old component expectation if needed, or update component
+      // The backend now returns { today: {...}, ranking: [...], ... }
+      // StatisticsSection likely expects { todayStats: {...}, incomeByBarber: [...] }
+      // We'll adapt the response here to match the existing component props
+      const data = response.data
+      setStats({
+        todayStats: data.today,
+        incomeByBarber: data.ranking
+      })
     } catch (err) {
       console.error("Error al cargar estadísticas:", err)
     }
@@ -110,9 +125,9 @@ export const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Navbar */}
-      <nav className="bg-[#1a1a1a] text-white shadow-lg">
+      <nav className="bg-[#1a1a1a] text-white shadow-lg sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Barbershop Admin</h1>
@@ -127,83 +142,118 @@ export const AdminDashboard = () => {
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Statistics Section */}
-        {stats && <StatisticsSection stats={stats} />}
-
-        {/* Filters Section */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <h2 className="text-xl font-bold text-[#1a1a1a] mb-4">Filtros</h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div>
-              <label className="block text-gray-700 font-semibold mb-2 text-sm">Barbero</label>
-              <select
-                name="barberId"
-                value={filters.barberId}
-                onChange={handleFilterChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#d4a574]"
-              >
-                <option value="">Todos los barberos</option>
-                {barbers.map((barber) => (
-                  <option key={barber._id} value={barber._id}>
-                    {barber.name} {barber.lastName}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-gray-700 font-semibold mb-2 text-sm">Método de pago</label>
-              <select
-                name="paymentMethod"
-                value={filters.paymentMethod}
-                onChange={handleFilterChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#d4a574]"
-              >
-                <option value="">Todos los métodos</option>
-                <option value="efectivo">Efectivo</option>
-                <option value="transferencia">Transferencia</option>
-                <option value="tarjeta">Tarjeta</option>
-                <option value="otro">Otro</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-gray-700 font-semibold mb-2 text-sm">Desde</label>
-              <input
-                type="date"
-                name="startDate"
-                value={filters.startDate}
-                onChange={handleFilterChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#d4a574]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-gray-700 font-semibold mb-2 text-sm">Hasta</label>
-              <input
-                type="date"
-                name="endDate"
-                value={filters.endDate}
-                onChange={handleFilterChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#d4a574]"
-              />
-            </div>
-
-            <div className="flex items-end">
-              <button
-                onClick={handleExport}
-                className="w-full bg-[#d4a574] hover:bg-[#c19a5e] text-black font-bold py-2 rounded transition text-sm"
-              >
-                Exportar CSV
-              </button>
-            </div>
+      <div className="flex flex-1 max-w-7xl mx-auto w-full px-6 py-8 gap-8">
+        {/* Sidebar / Tabs */}
+        <aside className="w-64 flex-shrink-0">
+          <div className="bg-white rounded-lg shadow p-4 space-y-2 sticky top-24">
+            <button
+              onClick={() => setActiveTab("overview")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === "overview" ? "bg-[#d4a574] text-black font-bold" : "text-gray-600 hover:bg-gray-100"}`}
+            >
+              <LayoutDashboard size={20} /> Resumen General
+            </button>
+            <button
+              onClick={() => setActiveTab("barbers")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === "barbers" ? "bg-[#d4a574] text-black font-bold" : "text-gray-600 hover:bg-gray-100"}`}
+            >
+              <UserCog size={20} /> Gestión Barberos
+            </button>
+            <button
+              onClick={() => setActiveTab("clients")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === "clients" ? "bg-[#d4a574] text-black font-bold" : "text-gray-600 hover:bg-gray-100"}`}
+            >
+              <Users size={20} /> Gestión Clientes
+            </button>
           </div>
-        </div>
+        </aside>
 
-        {/* Cuts Table Section */}
-        <CutsFilterTable cuts={cuts} loading={loading} />
+        {/* Main Content */}
+        <main className="flex-1">
+          {activeTab === "overview" && (
+            <div className="space-y-8">
+              {/* Statistics Section */}
+              {stats && <StatisticsSection stats={stats} />}
+
+              {/* Filters Section */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-xl font-bold text-[#1a1a1a] mb-4">Filtros de Cortes</h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                  <div>
+                    <label className="block text-gray-700 font-semibold mb-2 text-sm">Barbero</label>
+                    <select
+                      name="barberId"
+                      value={filters.barberId}
+                      onChange={handleFilterChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#d4a574]"
+                    >
+                      <option value="">Todos los barberos</option>
+                      {barbers.map((barber) => (
+                        <option key={barber._id} value={barber._id}>
+                          {barber.name} {barber.lastName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-700 font-semibold mb-2 text-sm">Método de pago</label>
+                    <select
+                      name="paymentMethod"
+                      value={filters.paymentMethod}
+                      onChange={handleFilterChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#d4a574]"
+                    >
+                      <option value="">Todos los métodos</option>
+                      <option value="efectivo">Efectivo</option>
+                      <option value="transferencia">Transferencia</option>
+                      <option value="tarjeta">Tarjeta</option>
+                      <option value="otro">Otro</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-700 font-semibold mb-2 text-sm">Desde</label>
+                    <input
+                      type="date"
+                      name="startDate"
+                      value={filters.startDate}
+                      onChange={handleFilterChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#d4a574]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-700 font-semibold mb-2 text-sm">Hasta</label>
+                    <input
+                      type="date"
+                      name="endDate"
+                      value={filters.endDate}
+                      onChange={handleFilterChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#d4a574]"
+                    />
+                  </div>
+
+                  <div className="flex items-end">
+                    <button
+                      onClick={handleExport}
+                      className="w-full bg-[#d4a574] hover:bg-[#c19a5e] text-black font-bold py-2 rounded transition text-sm"
+                    >
+                      Exportar CSV
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cuts Table Section */}
+              <CutsFilterTable cuts={cuts} loading={loading} />
+            </div>
+          )}
+
+          {activeTab === "barbers" && <BarberManagement />}
+
+          {activeTab === "clients" && <ClientManagement />}
+        </main>
       </div>
     </div>
   )

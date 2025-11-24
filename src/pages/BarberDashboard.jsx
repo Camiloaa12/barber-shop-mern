@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom"
 import { CutForm } from "../components/CutForm"
 import { CutsList } from "../components/CutsList"
 import apiClient from "../api/apiClient"
+import { TrendingUp, DollarSign, Scissors, CreditCard } from "lucide-react"
 
 export const BarberDashboard = () => {
   const { user, logout } = useAuth()
@@ -14,9 +15,11 @@ export const BarberDashboard = () => {
   const [loading, setLoading] = useState(false)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0])
+  const [personalStats, setPersonalStats] = useState(null)
 
   useEffect(() => {
     fetchCuts()
+    fetchPersonalStats()
   }, [selectedDate, refreshTrigger])
 
   const fetchCuts = async () => {
@@ -42,6 +45,17 @@ export const BarberDashboard = () => {
     }
   }
 
+  const fetchPersonalStats = async () => {
+    try {
+      const response = await apiClient.get("/stats/me", {
+        params: { date: selectedDate }
+      })
+      setPersonalStats(response.data.today)
+    } catch (err) {
+      console.error("Error fetching personal stats:", err)
+    }
+  }
+
   const handleCutAdded = () => {
     setRefreshTrigger((prev) => prev + 1)
   }
@@ -50,8 +64,6 @@ export const BarberDashboard = () => {
     logout()
     navigate("/login")
   }
-
-  const totalIncome = cuts.reduce((sum, cut) => sum + cut.amount, 0)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -74,20 +86,48 @@ export const BarberDashboard = () => {
       </nav>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Date Picker */}
+        <div className="mb-6 flex justify-end">
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#d4a574]"
+          />
+        </div>
+
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-6 border-l-4 border-[#d4a574]">
-            <p className="text-gray-600 text-sm font-semibold mb-2">CORTES DEL DÍA</p>
-            <p className="text-3xl font-bold text-[#1a1a1a]">{cuts.length}</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-gray-600 text-sm font-semibold">CORTES DEL DÍA</p>
+              <Scissors className="text-[#d4a574]" size={20} />
+            </div>
+            <p className="text-3xl font-bold text-[#1a1a1a]">{personalStats?.totalCuts || 0}</p>
           </div>
           <div className="bg-white rounded-lg shadow p-6 border-l-4 border-[#d4a574]">
-            <p className="text-gray-600 text-sm font-semibold mb-2">INGRESOS HOY</p>
-            <p className="text-3xl font-bold text-[#d4a574]">${totalIncome.toFixed(2)}</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-gray-600 text-sm font-semibold">INGRESOS HOY</p>
+              <DollarSign className="text-[#d4a574]" size={20} />
+            </div>
+            <p className="text-3xl font-bold text-[#d4a574]">${personalStats?.totalIncome?.toFixed(2) || "0.00"}</p>
           </div>
           <div className="bg-white rounded-lg shadow p-6 border-l-4 border-[#1a1a1a]">
-            <p className="text-gray-600 text-sm font-semibold mb-2">PROMEDIO POR CORTE</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-gray-600 text-sm font-semibold">PROMEDIO / CORTE</p>
+              <TrendingUp className="text-[#1a1a1a]" size={20} />
+            </div>
             <p className="text-3xl font-bold text-[#1a1a1a]">
-              ${cuts.length > 0 ? (totalIncome / cuts.length).toFixed(2) : "0.00"}
+              ${personalStats?.avgTicket?.toFixed(2) || "0.00"}
+            </p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6 border-l-4 border-[#1a1a1a]">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-gray-600 text-sm font-semibold">PAGO FRECUENTE</p>
+              <CreditCard className="text-[#1a1a1a]" size={20} />
+            </div>
+            <p className="text-xl font-bold text-[#1a1a1a] capitalize">
+              {personalStats?.mostFrequentPayment || "N/A"}
             </p>
           </div>
         </div>
@@ -103,12 +143,6 @@ export const BarberDashboard = () => {
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-[#1a1a1a]">Historial de cortes</h2>
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#d4a574]"
-                />
               </div>
 
               {loading ? <p className="text-center text-gray-600">Cargando cortes...</p> : <CutsList cuts={cuts} />}
