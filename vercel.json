@@ -3,6 +3,6 @@
   "buildCommand": "",
   "outputDirectory": "public",
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://softbarber-backend.onrender.com/api/$1" }
+    { "source": "/api/(.*)", "destination": "https://softbarber-backend.onrender.com" }
   ]
 }
