@@ -1,13 +1,141 @@
-<!DOCTYPE html>
+
+<!doctype html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Barbershop Manager</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SoftBarber</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>SoftBarber</h1>
+    <nav id="nav" class="hidden">
+      <button data-view="admin">Panel Admin</button>
+      <button data-view="barber">Panel Barbero</button>
+      <button data-view="stats">Estadísticas</button>
+      <button data-view="appointments">Agenda</button>
+      <button data-view="clients">Clientes</button>
+      <button id="logout">Salir</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="login-view">
+      <h2>Acceso</h2>
+      <form id="login-form">
+        <input type="email" name="email" placeholder="Email" required />
+        <input type="password" name="password" placeholder="Contraseña" required />
+        <button type="submit">Entrar</button>
+      </form>
+      <p>
+        ¿No tienes cuenta? <button id="show-register">Regístrate</button>
+      </p>
+      <form id="register-form" class="hidden">
+        <input type="text" name="username" placeholder="Usuario" required />
+        <input type="email" name="email" placeholder="Email" required />
+        <input type="password" name="password" placeholder="Contraseña" required />
+        <!-- Registro solo de barberos -->
+        <button type="submit">Crear cuenta</button>
+      </form>
+    </section>
+
+    <section id="admin-view" class="hidden">
+      <h2>Panel Admin</h2>
+      <div id="admin-dashboard"></div>
+      <h3>Barberos</h3>
+      <table id="barbers-table">
+        <thead>
+          <tr><th>Usuario</th><th>Email</th><th>Estado</th><th>Acciones</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section id="barber-view" class="hidden">
+      <h2>Panel Barbero</h2>
+      <form id="cut-form">
+        <input name="client" placeholder="Cliente" required />
+        <input name="price" type="number" step="0.01" placeholder="Precio" required />
+        <select name="payment" required>
+          <option value="efectivo">Efectivo</option>
+          <option value="transferencia">Transferencia</option>
+        </select>
+        <input name="description" placeholder="Descripción" />
+        <input name="barber" placeholder="Barbero" required />
+        <button type="submit">Registrar corte</button>
+      </form>
+      <h3>Historial</h3>
+      <div>
+        <input id="filter-barber" placeholder="Filtrar por barbero" />
+        <input id="filter-client" placeholder="Filtrar por cliente" />
+        <button id="load-cuts">Cargar cortes</button>
+      </div>
+      <table id="cuts-table">
+        <thead>
+          <tr><th>Fecha</th><th>Cliente</th><th>Barbero</th><th>Pago</th><th>Precio</th><th>Descripción</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section id="stats-view" class="hidden">
+      <h2>Estadísticas</h2>
+      <div id="stats-daily"></div>
+      <div id="stats-weekly"></div>
+      <div id="stats-monthly"></div>
+      <div>
+        <h3>Conteo de cortes por fecha</h3>
+        <input id="counts-from" type="date" />
+        <input id="counts-to" type="date" />
+        <button id="load-counts">Cargar</button>
+        <ul id="counts-list"></ul>
+      </div>
+    </section>
+
+    <section id="appointments-view" class="hidden">
+      <h2>Agenda de Citas</h2>
+      <form id="appointment-form">
+        <input name="client" placeholder="Cliente" required />
+        <input name="barber" placeholder="Barbero" required />
+        <input name="date" type="date" required />
+        <input name="time" type="time" required />
+        <button type="submit">Agendar</button>
+      </form>
+      <h3>Listado</h3>
+      <table id="appointments-table">
+        <thead>
+          <tr><th>Fecha</th><th>Hora</th><th>Cliente</th><th>Barbero</th><th>Estado</th><th>Acciones</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section id="clients-view" class="hidden">
+      <h2>Clientes</h2>
+      <form id="client-form">
+        <input name="name" placeholder="Nombre" required />
+        <input name="email" placeholder="Email" />
+        <input name="phone" placeholder="Teléfono" />
+        <input name="barber" placeholder="Barbero" />
+        <button type="submit">Registrar</button>
+      </form>
+      <h3>Frecuentes</h3>
+      <input id="frequent-barber" placeholder="Filtrar por barbero" />
+      <button id="load-frequents">Cargar</button>
+      <table id="clients-table">
+        <thead>
+          <tr><th>Cliente</th><th>Total Cortes</th><th>Total Gastado</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script>
+    // Si prefieres variable, puedes inyectarla en despliegue
+    window.SOFTBARBER_API_URL = '/api';
+  </script>
+  <script src="script.js"></script>
+</body>
 </html>
