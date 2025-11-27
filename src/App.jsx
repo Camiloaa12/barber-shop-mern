@@ -4,6 +4,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute"
 import { Login } from "./pages/Login"
 import { Register } from "./pages/Register"
 import { BarberDashboard } from "./pages/BarberDashboard"
+import { BarberAnalytics } from "./pages/BarberAnalytics"
 import { AdminDashboard } from "./pages/AdminDashboard"
 import { Unauthorized } from "./pages/Unauthorized"
 
@@ -16,17 +17,27 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
 
+          {/* Barber Routes */}
           <Route
-            path="/barber-dashboard"
+            path="/barber/dashboard"
             element={
               <ProtectedRoute allowedRoles={["barbero", "admin"]}>
                 <BarberDashboard />
               </ProtectedRoute>
             }
           />
-
           <Route
-            path="/admin-dashboard"
+            path="/barber/analytics"
+            element={
+              <ProtectedRoute allowedRoles={["barbero", "admin"]}>
+                <BarberAnalytics />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Admin Routes */}
+          <Route
+            path="/admin/dashboard"
             element={
               <ProtectedRoute allowedRoles={["admin"]}>
                 <AdminDashboard />
@@ -34,6 +45,9 @@ function App() {
             }
           />
 
+          {/* Legacy Redirects or Root Redirect */}
+          <Route path="/barber-dashboard" element={<Navigate to="/barber/dashboard" />} />
+          <Route path="/admin-dashboard" element={<Navigate to="/admin/dashboard" />} />
           <Route path="/" element={<Navigate to="/login" />} />
         </Routes>
       </AuthProvider>

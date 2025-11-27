@@ -1,25 +1,26 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useAuth } from "../hooks/useAuth"
 import { useNavigate } from "react-router-dom"
 import { CutForm } from "../components/CutForm"
 import { CutsList } from "../components/CutsList"
 import apiClient from "../api/apiClient"
-import { TrendingUp, DollarSign, Scissors, CreditCard } from "lucide-react"
+import { DashboardLayout } from "../layouts/DashboardLayout"
+import { Scissors, DollarSign, Clock } from "lucide-react"
 
 export const BarberDashboard = () => {
-  const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [cuts, setCuts] = useState([])
   const [loading, setLoading] = useState(false)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0])
-  const [personalStats, setPersonalStats] = useState(null)
+
+  // Daily quick stats
+  const [dailyTotal, setDailyTotal] = useState(0)
+  const [dailyCount, setDailyCount] = useState(0)
 
   useEffect(() => {
     fetchCuts()
-    fetchPersonalStats()
   }, [selectedDate, refreshTrigger])
 
   const fetchCuts = async () => {
@@ -37,7 +38,14 @@ export const BarberDashboard = () => {
           endDate: endOfDay.toISOString(),
         },
       })
-      setCuts(response.data)
+      const data = response.data
+      setCuts(data)
+
+      // Calculate quick stats locally for immediate feedback
+      const total = data.reduce((sum, cut) => sum + cut.amount, 0)
+      setDailyTotal(total)
+      setDailyCount(data.length)
+
     } catch (err) {
       console.error("Error al cargar cortes:", err)
     } finally {
@@ -45,111 +53,106 @@ export const BarberDashboard = () => {
     }
   }
 
-  const fetchPersonalStats = async () => {
-    try {
-      const response = await apiClient.get("/stats/me", {
-        params: { date: selectedDate }
-      })
-      setPersonalStats(response.data.today)
-    } catch (err) {
-      console.error("Error fetching personal stats:", err)
-    }
-  }
-
   const handleCutAdded = () => {
     setRefreshTrigger((prev) => prev + 1)
   }
 
-  const handleLogout = () => {
-    logout()
-    navigate("/login")
+  // Format currency to COP
+  const formatCOP = (amount) => {
+    return new Intl.NumberFormat("es-CO", {
+      style: "currency",
+      currency: "COP",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount)
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navbar */}
-      <nav className="bg-[#1a1a1a] text-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Barbershop Manager</h1>
-            <p className="text-sm text-gray-400">
-              Bienvenido, {user?.name} {user?.lastName}
-            </p>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 bg-[#d4a574] hover:bg-[#c19a5e] text-black font-bold rounded transition"
-          >
-            Cerrar sesión
-          </button>
-        </div>
-      </nav>
+    <DashboardLayout>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 w-full max-w-7xl mx-auto">
+        {/* Left Column: Action (Register Cut) */}
+        <div className="lg:col-span-1 space-y-6">
+          <div className="bg-[#1a1a1a] p-6 rounded-xl border border-[#333] shadow-xl">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-[#d4a574] rounded-lg text-black">
+                <Scissors size={24} />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Nuevo Corte</h2>
+                <p className="text-sm text-gray-400">Registra un servicio</p>
+              </div>
+            </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Date Picker */}
-        <div className="mb-6 flex justify-end">
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#d4a574]"
-          />
-        </div>
-
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6 border-l-4 border-[#d4a574]">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-gray-600 text-sm font-semibold">CORTES DEL DÍA</p>
-              <Scissors className="text-[#d4a574]" size={20} />
-            </div>
-            <p className="text-3xl font-bold text-[#1a1a1a]">{personalStats?.totalCuts || 0}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6 border-l-4 border-[#d4a574]">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-gray-600 text-sm font-semibold">INGRESOS HOY</p>
-              <DollarSign className="text-[#d4a574]" size={20} />
-            </div>
-            <p className="text-3xl font-bold text-[#d4a574]">${personalStats?.totalIncome?.toFixed(2) || "0.00"}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6 border-l-4 border-[#1a1a1a]">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-gray-600 text-sm font-semibold">PROMEDIO / CORTE</p>
-              <TrendingUp className="text-[#1a1a1a]" size={20} />
-            </div>
-            <p className="text-3xl font-bold text-[#1a1a1a]">
-              ${personalStats?.avgTicket?.toFixed(2) || "0.00"}
-            </p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6 border-l-4 border-[#1a1a1a]">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-gray-600 text-sm font-semibold">PAGO FRECUENTE</p>
-              <CreditCard className="text-[#1a1a1a]" size={20} />
-            </div>
-            <p className="text-xl font-bold text-[#1a1a1a] capitalize">
-              {personalStats?.mostFrequentPayment || "N/A"}
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Form Section */}
-          <div className="lg:col-span-1">
+            {/* Pass formatCOP if CutForm needs it, or handle inside */}
             <CutForm onCutAdded={handleCutAdded} />
           </div>
 
-          {/* Cuts List Section */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-[#1a1a1a]">Historial de cortes</h2>
+          {/* Quick Daily Summary Card */}
+          <div className="bg-gradient-to-br from-[#d4a574] to-[#b08d55] p-6 rounded-xl shadow-lg text-black">
+            <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+              <Clock size={20} /> Resumen de Hoy
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm font-medium opacity-80">Cortes</p>
+                <p className="text-3xl font-bold">{dailyCount}</p>
               </div>
+              <div>
+                <p className="text-sm font-medium opacity-80">Ingresos</p>
+                <p className="text-3xl font-bold">{formatCOP(dailyTotal)}</p>
+              </div>
+            </div>
+          </div>
+        </div>
 
-              {loading ? <p className="text-center text-gray-600">Cargando cortes...</p> : <CutsList cuts={cuts} />}
+        {/* Right Column: List (History) */}
+        <div className="lg:col-span-2 flex flex-col h-full">
+          <div className="bg-[#1a1a1a] rounded-xl border border-[#333] shadow-xl flex-1 flex flex-col overflow-hidden">
+            <div className="p-6 border-b border-[#333] flex justify-between items-center bg-[#222]">
+              <h2 className="text-xl font-bold text-white">Cortes Realizados</h2>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="bg-[#333] text-white px-4 py-2 rounded-lg border border-[#444] focus:outline-none focus:border-[#d4a574]"
+              />
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+              {loading ? (
+                <div className="flex justify-center items-center h-full text-gray-500">
+                  Cargando...
+                </div>
+              ) : cuts.length === 0 ? (
+                <div className="flex flex-col justify-center items-center h-full text-gray-500 opacity-50">
+                  <Scissors size={48} className="mb-2" />
+                  <p>No hay cortes registrados hoy</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {cuts.map((cut) => (
+                    <div key={cut._id} className="bg-[#252525] p-4 rounded-lg border border-[#333] flex justify-between items-center hover:border-[#d4a574] transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-[#333] flex items-center justify-center text-[#d4a574] font-bold">
+                          {cut.clientName.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="text-white font-bold">{cut.clientName} {cut.clientLastName}</p>
+                          <p className="text-xs text-gray-400 capitalize">{cut.service || "Corte Regular"} • {cut.paymentMethod}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[#d4a574] font-bold text-lg">{formatCOP(cut.amount)}</p>
+                        <p className="text-xs text-gray-500">{new Date(cut.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   )
 }

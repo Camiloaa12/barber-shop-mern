@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import apiClient from "../api/apiClient"
+import { UserPlus, X } from "lucide-react"
 
 export const CutForm = ({ onCutAdded }) => {
   const [formData, setFormData] = useState({
@@ -13,7 +14,6 @@ export const CutForm = ({ onCutAdded }) => {
     clientId: null,
   })
   const [clients, setClients] = useState([])
-  const [showClientSearch, setShowClientSearch] = useState(true)
   const [selectedClient, setSelectedClient] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
@@ -51,7 +51,6 @@ export const CutForm = ({ onCutAdded }) => {
     }))
     setSelectedClient(client)
     setClients([])
-    setShowClientSearch(false)
   }
 
   const handleCreateNewClient = async () => {
@@ -70,19 +69,56 @@ export const CutForm = ({ onCutAdded }) => {
     e.preventDefault()
     setError("")
     setSuccess("")
+
+    // Validate amount
+    if (!formData.amount || formData.amount === "" || formData.amount === "0") {
+      setError("Por favor ingresa un monto válido")
+      return
+    }
+
+    // Validate client name and lastname
+    if (!formData.clientName || !formData.clientLastName) {
+      setError("Por favor ingresa el nombre y apellido del cliente")
+      return
+    }
+
     setLoading(true)
 
     try {
+      const amountValue = parseInt(formData.amount.toString().replace(/[^0-9]/g, ''), 10)
+
+      if (isNaN(amountValue) || amountValue <= 0) {
+        setError("El monto debe ser un número válido mayor a 0")
+        setLoading(false)
+        return
+      }
+
+      // Auto-create client if not selected
+      let clientId = formData.clientId
+      if (!selectedClient) {
+        try {
+          const clientResponse = await apiClient.post("/clients", {
+            name: formData.clientName,
+            lastName: formData.clientLastName,
+          })
+          clientId = clientResponse.data._id
+        } catch (clientErr) {
+          // Client might already exist, continue with the cut registration
+          console.log("Client creation note:", clientErr.response?.data?.message)
+        }
+      }
+
       await apiClient.post("/cuts", {
-        clientId: formData.clientId,
+        clientId: clientId,
         clientName: formData.clientName,
         clientLastName: formData.clientLastName,
-        amount: Number.parseFloat(formData.amount),
+        amount: amountValue,
         paymentMethod: formData.paymentMethod,
         observations: formData.observations,
+        service: "Corte Regular",
       })
 
-      setSuccess("Corte registrado exitosamente")
+      setSuccess("✓ Corte registrado exitosamente")
       setFormData({
         clientName: "",
         clientLastName: "",
@@ -92,7 +128,6 @@ export const CutForm = ({ onCutAdded }) => {
         clientId: null,
       })
       setSelectedClient(null)
-      setShowClientSearch(true)
 
       setTimeout(() => setSuccess(""), 3000)
       onCutAdded()
@@ -104,30 +139,29 @@ export const CutForm = ({ onCutAdded }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-xl font-bold text-[#1a1a1a] mb-6">Registrar corte</h2>
+    <div className="space-y-4">
+      {error && <div className="p-3 bg-red-900/20 border border-red-500/50 text-red-400 rounded-lg text-sm">{error}</div>}
+      {success && <div className="p-3 bg-green-900/20 border border-green-500/50 text-green-400 rounded-lg text-sm">{success}</div>}
 
-      {error && <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">{error}</div>}
-
-      {success && (
-        <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded text-sm">{success}</div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         {/* Client Selection */}
         <div>
-          <label className="block text-gray-700 font-semibold mb-2">Cliente</label>
+          <label className="block text-gray-400 text-sm font-medium mb-2">Cliente</label>
 
           {selectedClient ? (
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded flex items-center justify-between">
-              <p className="text-[#1a1a1a]">
-                {selectedClient.name} {selectedClient.lastName}
-              </p>
+            <div className="p-3 bg-[#2a2a2a] border border-[#d4a574] rounded-lg flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-[#d4a574] rounded-full flex items-center justify-center text-black font-bold">
+                  {selectedClient.name.charAt(0)}
+                </div>
+                <p className="text-white font-medium">
+                  {selectedClient.name} {selectedClient.lastName}
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={() => {
                   setSelectedClient(null)
-                  setShowClientSearch(true)
                   setFormData((prev) => ({
                     ...prev,
                     clientId: null,
@@ -135,9 +169,9 @@ export const CutForm = ({ onCutAdded }) => {
                     clientLastName: "",
                   }))
                 }}
-                className="text-blue-600 hover:text-blue-800 text-sm"
+                className="text-gray-400 hover:text-white transition"
               >
-                Cambiar
+                <X size={18} />
               </button>
             </div>
           ) : (
@@ -149,7 +183,7 @@ export const CutForm = ({ onCutAdded }) => {
                   value={formData.clientName}
                   onChange={handleInputChange}
                   placeholder="Nombre"
-                  className="px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#d4a574]"
+                  className="w-full px-3 py-2 bg-[#2a2a2a] border border-[#333] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#d4a574]"
                 />
                 <input
                   type="text"
@@ -157,20 +191,21 @@ export const CutForm = ({ onCutAdded }) => {
                   value={formData.clientLastName}
                   onChange={handleInputChange}
                   placeholder="Apellido"
-                  className="px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#d4a574]"
+                  className="w-full px-3 py-2 bg-[#2a2a2a] border border-[#333] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#d4a574]"
                 />
               </div>
 
               {clients.length > 0 && (
-                <div className="border border-gray-300 rounded max-h-32 overflow-y-auto">
+                <div className="bg-[#2a2a2a] border border-[#333] rounded-lg max-h-40 overflow-y-auto custom-scrollbar z-10">
                   {clients.map((client) => (
                     <button
                       key={client._id}
                       type="button"
                       onClick={() => handleSelectClient(client)}
-                      className="w-full text-left px-3 py-2 hover:bg-blue-100 text-sm text-gray-700 border-b last:border-b-0"
+                      className="w-full text-left px-3 py-2 hover:bg-[#333] text-sm text-gray-300 border-b border-[#333] last:border-b-0 flex items-center justify-between group"
                     >
-                      {client.name} {client.lastName}
+                      <span>{client.name} {client.lastName}</span>
+                      <UserPlus size={14} className="opacity-0 group-hover:opacity-100 text-[#d4a574]" />
                     </button>
                   ))}
                 </div>
@@ -180,9 +215,9 @@ export const CutForm = ({ onCutAdded }) => {
                 <button
                   type="button"
                   onClick={handleCreateNewClient}
-                  className="w-full px-3 py-2 bg-blue-50 border border-blue-300 text-blue-700 rounded text-sm hover:bg-blue-100 font-semibold"
+                  className="w-full px-3 py-2 bg-[#d4a574]/10 border border-[#d4a574]/30 text-[#d4a574] rounded-lg text-sm hover:bg-[#d4a574]/20 font-medium flex items-center justify-center gap-2 transition"
                 >
-                  Crear nuevo cliente
+                  <UserPlus size={16} /> Crear nuevo cliente
                 </button>
               )}
             </div>
@@ -191,54 +226,60 @@ export const CutForm = ({ onCutAdded }) => {
 
         {/* Amount */}
         <div>
-          <label className="block text-gray-700 font-semibold mb-2">Monto ($)</label>
-          <input
-            type="number"
-            name="amount"
-            value={formData.amount}
-            onChange={handleInputChange}
-            placeholder="0.00"
-            step="0.01"
-            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-[#d4a574]"
-            required
-          />
+          <label className="block text-gray-400 text-sm font-medium mb-2">Valor del Corte (COP)</label>
+          <div className="relative">
+            <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+            <input
+              type="number"
+              name="amount"
+              value={formData.amount}
+              onChange={handleInputChange}
+              placeholder="20000"
+              className="w-full pl-7 pr-3 py-2 bg-[#2a2a2a] border border-[#333] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#d4a574]"
+              required
+            />
+          </div>
         </div>
 
         {/* Payment Method */}
         <div>
-          <label className="block text-gray-700 font-semibold mb-2">Método de pago</label>
-          <select
-            name="paymentMethod"
-            value={formData.paymentMethod}
-            onChange={handleInputChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-[#d4a574]"
-          >
-            <option value="efectivo">Efectivo</option>
-            <option value="transferencia">Transferencia</option>
-            <option value="tarjeta">Tarjeta</option>
-            <option value="otro">Otro</option>
-          </select>
+          <label className="block text-gray-400 text-sm font-medium mb-2">Método de pago</label>
+          <div className="grid grid-cols-2 gap-2">
+            {['efectivo', 'transferencia', 'tarjeta', 'otro'].map((method) => (
+              <button
+                key={method}
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, paymentMethod: method }))}
+                className={`px-3 py-2 rounded-lg text-sm font-medium capitalize border transition-all ${formData.paymentMethod === method
+                  ? "bg-[#d4a574] text-black border-[#d4a574]"
+                  : "bg-[#2a2a2a] text-gray-400 border-[#333] hover:border-[#555]"
+                  }`}
+              >
+                {method}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Observations */}
         <div>
-          <label className="block text-gray-700 font-semibold mb-2">Observaciones</label>
+          <label className="block text-gray-400 text-sm font-medium mb-2">Observaciones (Opcional)</label>
           <textarea
             name="observations"
             value={formData.observations}
             onChange={handleInputChange}
-            placeholder="Notas del corte..."
-            rows="3"
-            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-[#d4a574]"
+            placeholder="Detalles adicionales..."
+            rows="2"
+            className="w-full px-3 py-2 bg-[#2a2a2a] border border-[#333] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#d4a574]"
           />
         </div>
 
         <button
           type="submit"
-          disabled={loading || !selectedClient}
-          className="w-full bg-[#1a1a1a] hover:bg-[#2d2d2d] text-white font-bold py-2 rounded transition disabled:opacity-50"
+          disabled={loading || !formData.clientName || !formData.clientLastName || !formData.amount}
+          className="w-full bg-[#d4a574] hover:bg-[#c19a5e] text-black font-bold py-3 rounded-lg transition-all shadow-lg shadow-[#d4a574]/20 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? "Registrando..." : "Registrar corte"}
+          {loading ? "Registrando..." : "REGISTRAR CORTE"}
         </button>
       </form>
     </div>
