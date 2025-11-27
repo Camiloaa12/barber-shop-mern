@@ -32,6 +32,7 @@ async function apiFetch(path, options = {}) {
 const views = {
   login: document.getElementById("login-view"),
   reservas: document.getElementById("reservas-view"),
+  cortes: document.getElementById("cortes-view"),
   admin: document.getElementById("admin-view"),
 };
 function show(view) {
@@ -42,10 +43,12 @@ function show(view) {
 // NAV
 const navLogin = document.getElementById("nav-login");
 const navReservas = document.getElementById("nav-reservas");
+const navCortes = document.getElementById("nav-cortes");
 const navAdmin = document.getElementById("nav-admin");
 const navLogout = document.getElementById("nav-logout");
 navLogin.onclick = () => show("login");
 navReservas.onclick = () => show("reservas");
+navCortes.onclick = () => show("cortes");
 navAdmin.onclick = () => show("admin");
 navLogout.onclick = () => {
   state.token = null; state.user = null;
@@ -64,21 +67,24 @@ btnLogin.onclick = async () => {
   try {
     const payload = { email: loginEmail.value.trim(), password: loginPassword.value.trim() };
     const data = await apiFetch("/auth/login", { method: "POST", body: JSON.stringify(payload) });
-    // asume { token, user }
-    state.token = data.token; state.user = data.user || null;
+    // backend retorna { token, role }
+    state.token = data.token; state.user = { role: data.role };
     localStorage.setItem("softbarber_token", state.token);
     setStatus(loginStatus, "OK");
     show("reservas");
     await cargarReservas();
   } catch (e) {
-    setStatus(loginStatus, `Error: ${(e.data && e.data.message) || e.status || "login"}`, true);
+    const msg = (e.data && (e.data.msg || e.data.message)) || `HTTP ${e.status}` || "login";
+    setStatus(loginStatus, `Error: ${msg}`, true);
   }
 };
 
-// RESERVAS
+// RESERVAS (appointments)
 const reservasTableBody = document.querySelector("#reservas-table tbody");
 const resNombre = document.getElementById("res-nombre");
+const resBarbero = document.getElementById("res-barbero");
 const resFecha = document.getElementById("res-fecha");
+const resHora = document.getElementById("res-hora");
 const resServicio = document.getElementById("res-servicio");
 const resStatus = document.getElementById("res-status");
 const btnCrearReserva = document.getElementById("btn-crear-reserva");
@@ -88,26 +94,33 @@ async function cargarReservas() {
   try {
     const list = await apiFetch("/appointments", { method: "GET" }); // GET lista
     reservasTableBody.innerHTML = (list || []).map(r => {
-      const fecha = new Date(r.date || r.fecha || Date.now()).toLocaleString();
+      const fecha = r.date || "";
+      const hora = r.time || "";
       return `<tr>
-        <td>${r.client || r.cliente || ""}</td>
+        <td>${r.client || ""}</td>
         <td>${fecha}</td>
-        <td>${r.service || r.servicio || ""}</td>
+        <td>${hora}</td>
+        <td>${r.barber || ""}</td>
         <td>
-          <button data-id="${r._id || r.id}" class="btn-del">Eliminar</button>
+          <button data-id="${r._id || r.id}" class="btn-cancel">Cancelar</button>
         </td>
       </tr>`;
     }).join("");
     // acciones
-    document.querySelectorAll(".btn-del").forEach(btn => {
+    document.querySelectorAll(".btn-cancel").forEach(btn => {
       btn.onclick = async () => {
         const id = btn.getAttribute("data-id");
-        try { await apiFetch(`/appointments/${id}`, { method: "DELETE" }); await cargarReservas(); }
-        catch (e) { alert("No se pudo eliminar"); }
+        try {
+          await apiFetch(`/appointments/${id}/status`, { method: "PUT", body: JSON.stringify({ status: "cancelada" }) });
+          await cargarReservas();
+        } catch (e) { alert("No se pudo cancelar"); }
       };
     });
     setStatus(resStatus, "Listo");
-  } catch (e) { setStatus(resStatus, "Error al cargar", true); }
+  } catch (e) {
+    const msg = (e.data && (e.data.msg || e.data.message)) || `HTTP ${e.status}`;
+    setStatus(resStatus, `Error al cargar: ${msg}`, true);
+  }
 }
 
 btnCrearReserva.onclick = async () => {
@@ -115,15 +128,50 @@ btnCrearReserva.onclick = async () => {
   try {
     const payload = {
       client: resNombre.value.trim(),
-      service: resServicio.value,
-      date: new Date(resFecha.value).toISOString(),
+      barber: resBarbero.value.trim(),
+      date: resFecha.value.trim(), // backend espera string
+      time: resHora.value.trim(),  // backend espera string
+      status: "pendiente",
     };
     await apiFetch("/appointments", { method: "POST", body: JSON.stringify(payload) });
-    resNombre.value = ""; resFecha.value = ""; resServicio.value = "corte";
+    resNombre.value = ""; resBarbero.value = ""; resFecha.value = ""; resHora.value = ""; resServicio.value = "corte";
     await cargarReservas();
     setStatus(resStatus, "Reserva creada");
-  } catch (e) { setStatus(resStatus, "Error al crear", true); }
+  } catch (e) {
+    const msg = (e.data && (e.data.msg || e.data.message)) || `HTTP ${e.status}`;
+    setStatus(resStatus, `Error al crear: ${msg}`, true);
+  }
 };
+
+// CORTES (cuts)
+const cutCliente = document.getElementById("cut-cliente");
+const cutBarbero = document.getElementById("cut-barbero");
+const cutPrecio = document.getElementById("cut-precio");
+const cutPago = document.getElementById("cut-pago");
+const cutDesc = document.getElementById("cut-desc");
+const cutStatus = document.getElementById("cut-status");
+const btnRegistrarCut = document.getElementById("btn-registrar-cut");
+
+if (btnRegistrarCut) {
+  btnRegistrarCut.onclick = async () => {
+    setStatus(cutStatus, "Guardando…");
+    try {
+      const payload = {
+        client: cutCliente.value.trim(),
+        barber: cutBarbero.value.trim(),
+        price: Number(cutPrecio.value),
+        payment: cutPago.value,
+        description: cutDesc.value.trim(),
+      };
+      await apiFetch("/cuts", { method: "POST", body: JSON.stringify(payload) });
+      cutCliente.value = ""; cutBarbero.value = ""; cutPrecio.value = ""; cutPago.value = "efectivo"; cutDesc.value = "";
+      setStatus(cutStatus, "Corte registrado");
+    } catch (e) {
+      const msg = (e.data && (e.data.msg || e.data.message)) || `HTTP ${e.status}`;
+      setStatus(cutStatus, `Error al registrar: ${msg}`, true);
+    }
+  };
+}
 
 // ADMIN: estadísticas y usuarios
 const statHoy = document.getElementById("stat-hoy");
@@ -138,8 +186,8 @@ async function cargarStats() {
   try {
     const daily = await apiFetch("/stats/daily");
     const monthly = await apiFetch("/stats/monthly");
-    statHoy.textContent = (daily && daily.count) || (daily && daily.total) || "–";
-    statMes.textContent = (monthly && monthly.total) || "–";
+    statHoy.textContent = (daily && (daily.count ?? daily.total)) ?? "–";
+    statMes.textContent = (monthly && monthly.total) ?? "–";
     const clients = await apiFetch("/clients", { method: "GET" });
     statClientes.textContent = (clients && clients.length) || "–";
     setStatus(adminStatus, "Listo");
@@ -148,7 +196,8 @@ async function cargarStats() {
 
 async function cargarUsuarios() {
   try {
-    const users = await apiFetch("/users", { method: "GET" });
+    // usa endpoint real del backend
+    const users = await apiFetch("/admin/barberos", { method: "GET" });
     usuariosTableBody.innerHTML = (users || []).map(u => `<tr>
       <td>${u.username || u.name || ""}</td>
       <td>${u.email || ""}</td>
@@ -157,7 +206,7 @@ async function cargarUsuarios() {
   } catch { usuariosTableBody.innerHTML = ""; }
 }
 
-btnLoadStats.onclick = async () => { await cargarStats(); await cargarUsuarios(); };
+if (btnLoadStats) btnLoadStats.onclick = async () => { await cargarStats(); await cargarUsuarios(); };
 
 // Arranque: si hay sesión, ir directo a reservas
 (async function init() {
