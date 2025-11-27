@@ -1,10 +1,10 @@
 
-// Config de API: funciona en Vercel (usa /api con rewrites) y en Render (usa dominio backend)
+// Config de API: funcionar en Render y en local
 const API_BASE = (() => {
   const host = location.hostname;
-  if (host.endsWith("vercel.app")) return "/api"; // proxy via vercel.json
-  if (host.endsWith("onrender.com")) return "https://softbarber-backend.onrender.com/api"; // Render static
-  return "/api"; // local puede usar proxy si configuras
+  if (host === "localhost" || host === "127.0.0.1") return "http://localhost:4000/api"; // desarrollo local
+  if (host.endsWith("onrender.com")) return "https://softbarber-backend.onrender.com/api"; // Render
+  return "https://softbarber-backend.onrender.com/api"; // fallback
 })();
 
 const state = {
