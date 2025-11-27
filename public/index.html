@@ -4,138 +4,120 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SoftBarber</title>
-  <link rel="stylesheet" href="styles.css" />
+  <title>SoftBarber • Frontend</title>
+  <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
   <header>
     <h1>SoftBarber</h1>
-    <nav id="nav" class="hidden">
-      <button data-view="admin">Panel Admin</button>
-      <button data-view="barber">Panel Barbero</button>
-      <button data-view="stats">Estadísticas</button>
-      <button data-view="appointments">Agenda</button>
-      <button data-view="clients">Clientes</button>
-      <button id="logout">Salir</button>
+    <nav>
+      <button id="nav-login">Login</button>
+      <button id="nav-reservas">Reservas</button>
+      <button id="nav-admin">Admin</button>
+      <button id="nav-logout" class="danger">Salir</button>
     </nav>
   </header>
 
   <main>
+    <!-- LOGIN -->
     <section id="login-view">
-      <h2>Acceso</h2>
-      <form id="login-form">
-        <input type="email" name="email" placeholder="Email" required />
-        <input type="password" name="password" placeholder="Contraseña" required />
-        <button type="submit">Entrar</button>
-      </form>
-      <p>
-        ¿No tienes cuenta? <button id="show-register">Regístrate</button>
-      </p>
-      <form id="register-form" class="hidden">
-        <input type="text" name="username" placeholder="Usuario" required />
-        <input type="email" name="email" placeholder="Email" required />
-        <input type="password" name="password" placeholder="Contraseña" required />
-        <!-- Registro solo de barberos -->
-        <button type="submit">Crear cuenta</button>
-      </form>
+      <h2 class="panel-title">Acceso</h2>
+      <div class="grid grid-2">
+        <div>
+          <label>Email</label>
+          <input id="login-email" type="email" placeholder="usuario@correo.com" />
+        </div>
+        <div>
+          <label>Password</label>
+          <input id="login-password" type="password" placeholder="••••••••" />
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <button class="primary" id="btn-login">Entrar</button>
+        <span id="login-status" style="margin-left:10px;color:#94a3b8"></span>
+      </div>
     </section>
 
+    <!-- RESERVAS -->
+    <section id="reservas-view" class="hidden">
+      <h2 class="panel-title">Reservas</h2>
+      <div class="grid grid-3">
+        <div>
+          <label>Nombre cliente</label>
+          <input id="res-nombre" type="text" />
+        </div>
+        <div>
+          <label>Fecha</label>
+          <input id="res-fecha" type="datetime-local" />
+        </div>
+        <div>
+          <label>Servicio</label>
+          <select id="res-servicio">
+            <option value="corte">Corte</option>
+            <option value="barba">Barba</option>
+            <option value="color">Color</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <button class="primary" id="btn-crear-reserva">Crear reserva</button>
+        <span id="res-status" style="margin-left:10px;color:#94a3b8"></span>
+      </div>
+
+      <table id="reservas-table">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Fecha</th>
+            <th>Servicio</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- ADMIN -->
     <section id="admin-view" class="hidden">
-      <h2>Panel Admin</h2>
-      <div id="admin-dashboard"></div>
-      <h3>Barberos</h3>
-      <table id="barbers-table">
-        <thead>
-          <tr><th>Usuario</th><th>Email</th><th>Estado</th><th>Acciones</th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </section>
-
-    <section id="barber-view" class="hidden">
-      <h2>Panel Barbero</h2>
-      <form id="cut-form">
-        <input name="client" placeholder="Cliente" required />
-        <input name="price" type="number" step="0.01" placeholder="Precio" required />
-        <select name="payment" required>
-          <option value="efectivo">Efectivo</option>
-          <option value="transferencia">Transferencia</option>
-        </select>
-        <input name="description" placeholder="Descripción" />
-        <input name="barber" placeholder="Barbero" required />
-        <button type="submit">Registrar corte</button>
-      </form>
-      <h3>Historial</h3>
-      <div>
-        <input id="filter-barber" placeholder="Filtrar por barbero" />
-        <input id="filter-client" placeholder="Filtrar por cliente" />
-        <button id="load-cuts">Cargar cortes</button>
+      <h2 class="panel-title">Panel Admin</h2>
+      <div class="grid grid-3">
+        <div class="stat-box">
+          <div style="color:#94a3b8">Reservas hoy</div>
+          <div id="stat-hoy" style="font-size:22px">–</div>
+        </div>
+        <div class="stat-box">
+          <div style="color:#94a3b8">Ingresos mes</div>
+          <div id="stat-mes" style="font-size:22px">–</div>
+        </div>
+        <div class="stat-box">
+          <div style="color:#94a3b8">Clientes</div>
+          <div id="stat-clientes" style="font-size:22px">–</div>
+        </div>
       </div>
-      <table id="cuts-table">
-        <thead>
-          <tr><th>Fecha</th><th>Cliente</th><th>Barbero</th><th>Pago</th><th>Precio</th><th>Descripción</th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </section>
 
-    <section id="stats-view" class="hidden">
-      <h2>Estadísticas</h2>
-      <div id="stats-daily"></div>
-      <div id="stats-weekly"></div>
-      <div id="stats-monthly"></div>
-      <div>
-        <h3>Conteo de cortes por fecha</h3>
-        <input id="counts-from" type="date" />
-        <input id="counts-to" type="date" />
-        <button id="load-counts">Cargar</button>
-        <ul id="counts-list"></ul>
+      <div style="margin-top:16px">
+        <button id="btn-load-stats">Actualizar estadísticas</button>
+        <span id="admin-status" style="margin-left:10px;color:#94a3b8"></span>
       </div>
-    </section>
 
-    <section id="appointments-view" class="hidden">
-      <h2>Agenda de Citas</h2>
-      <form id="appointment-form">
-        <input name="client" placeholder="Cliente" required />
-        <input name="barber" placeholder="Barbero" required />
-        <input name="date" type="date" required />
-        <input name="time" type="time" required />
-        <button type="submit">Agendar</button>
-      </form>
-      <h3>Listado</h3>
-      <table id="appointments-table">
+      <h3 style="color:#93c5fd">Usuarios</h3>
+      <table id="usuarios-table">
         <thead>
-          <tr><th>Fecha</th><th>Hora</th><th>Cliente</th><th>Barbero</th><th>Estado</th><th>Acciones</th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </section>
-
-    <section id="clients-view" class="hidden">
-      <h2>Clientes</h2>
-      <form id="client-form">
-        <input name="name" placeholder="Nombre" required />
-        <input name="email" placeholder="Email" />
-        <input name="phone" placeholder="Teléfono" />
-        <input name="barber" placeholder="Barbero" />
-        <button type="submit">Registrar</button>
-      </form>
-      <h3>Frecuentes</h3>
-      <input id="frequent-barber" placeholder="Filtrar por barbero" />
-      <button id="load-frequents">Cargar</button>
-      <table id="clients-table">
-        <thead>
-          <tr><th>Cliente</th><th>Total Cortes</th><th>Total Gastado</th></tr>
+          <tr>
+            <th>Nombre</th>
+            <th>Email</th>
+            <th>Rol</th>
+          </tr>
         </thead>
         <tbody></tbody>
       </table>
     </section>
   </main>
 
-  <script>
-    // Si prefieres variable, puedes inyectarla en despliegue
-    window.SOFTBARBER_API_URL = '/api';
-  </script>
-  <script src="script.js"></script>
+  <footer>
+    <small>© SoftBarber • SPA estática que consume API</small>
+  </footer>
+
+  <script src="/script.js"></script>
 </body>
 </html>
