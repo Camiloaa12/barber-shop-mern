@@ -1,0 +1,7 @@
+{
+  "buildCommand": "echo 'Static build'",
+  "outputDirectory": "public",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://softbarber-backend.onrender.com/api/$1" }
+  ]
+}

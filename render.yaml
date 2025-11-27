@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: softbarber-frontend
+    env: static
+    branch: main
+    staticPublishPath: public
