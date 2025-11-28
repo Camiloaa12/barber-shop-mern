@@ -1,16 +1,66 @@
-# React + Vite
+# 💈 SoftBarber - Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplicación web moderna para la gestión de barbería construida con React + Vite.
 
-Currently, two official plugins are available:
+## 🚀 Tecnologías
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **React 19** - Biblioteca de UI
+- **Vite** - Build tool y dev server
+- **React Router DOM** - Enrutamiento
+- **Axios** - Cliente HTTP
+- **Lucide React** - Iconos modernos
 
-## React Compiler
+## 📦 Instalación
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+# Instalar dependencias
+npm install
 
-## Expanding the ESLint configuration
+# Ejecutar en modo desarrollo
+npm run dev
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+# Construir para producción
+npm run build
+
+# Vista previa de producción
+npm run preview
+```
+
+## 🌐 Despliegue
+
+Esta aplicación está desplegada en **Render**.
+
+**Frontend URL:** [Tu URL de Render aquí]
+
+## 🔗 Repositorios Relacionados
+
+- **Backend:** [barber-shop-backend](https://github.com/Camiloaa12/barber-shop-backend)
+
+## 📝 Características
+
+- ✅ Autenticación de usuarios (Login/Registro)
+- ✅ Control de acceso basado en roles (Admin/Barbero)
+- ✅ Gestión de cortes y servicios
+- ✅ Dashboard administrativo
+- ✅ Diseño moderno y responsivo
+- ✅ Tema premium "SoftBarber"
+
+## 🛠️ Configuración
+
+Crea un archivo `.env` en la raíz del proyecto:
+
+```env
+VITE_API_URL=https://tu-backend-url.onrender.com
+```
+
+## 👨‍💻 Desarrollo
+
+El proyecto usa ESLint para mantener la calidad del código:
+
+```bash
+npm run lint
+```
+
+## 📄 Licencia
+
+Este proyecto es privado y de uso personal.
